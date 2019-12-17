@@ -28,7 +28,7 @@ pacman::p_load(
 
 
 ### Task  
-\qquad In this report, I would like to use the data of eletric vehicle charging stations in the U.S. and Canada to see if there is any place that an electric veihicle could not reach on this continent.  
+\qquad In this report, I would like to use the data of eletric vehicle charging stations in the U.S. and Canada to see if there is a trend in the distribution of electric vehicle charging stations on this continent. Moreover, I will construct maps and a ShinyApp to better examine the data.  
 
 
 ## Data  
