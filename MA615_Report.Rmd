@@ -1,0 +1,211 @@
+---
+title: "MA615 Final Project"
+author: "Xinqiao Zhang"
+date: "12/11/2019"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE,  out.width="0.9\\linewidth",dev="pdf",fig.align  = 'center')
+pacman::p_load(
+  "tidyverse",
+  "ggplot2", 
+  "httr", 
+  "lubridate", 
+  "janitor", 
+  "ggmap", 
+  "RColorBrewer"
+)
+```
+
+## Introduction  
+
+### Background  
+\qquad Nowadays, we can see more and more electric vehicles in the streets than we used to do. Electric cars have many obvious advantages comparing to gasoline cars. For instance, Tesla, as one of the largest electric vehicle manufacturer, has earned a reputation from customers. It is also important to know that all the models that Tesla has sold were electric vehicles. This means that electric vehicle business has started to get prosper.  
+\qquad By this notion, I would like to check the distribution of electric vehicle charging station to get a better understanding on how convenient it would be for electric vehicle owner to recharge.     
+
+
+### Task  
+\qquad In this report, I would like to use the data of eletric vehicle charging stations in the U.S. and Canada to see if there is any place that an electric veihicle could not reach on this continent.  
+
+
+## Data  
+\qquad The data I obtained was from the U.S. Department of Energy, and their website is https://afdc.energy.gov/fuels/electricity_locations.html#/find/nearest?fuel=ELEC. From the description, there are 28,347 charging stations and 79,853 chargin outlets in the U.S. and Canada. Hence it would be less effective to process this amount of data through API.  
+
+```{r, echo=TRUE}
+## Extract the data and check for the number of variables 
+data_raw<- read.csv("~/Desktop/BU/MA615/FinalProj/alt_fuel_stations.csv")
+length(data_raw)
+```
+
+
+### Variables  
+\qquad As we can see, there are 64 variables in this dataset but many of them has missing values or even missing columns. Thus we need to clean the data before we carry out any further study.   
+
+```{r, echo=TRUE}
+## Remove the empty columns  
+data_0<- remove_empty(data_raw, c("cols"))
+length(data_0)
+```
+\qquad We first removed 24 empty columns. Then we should remove those columns with variables which are vague and not useful to our study. For example, "expected_date" represent "the date the station is expected to open or start carrying alternative fuel".  
+\qquad However, this step could be subjective and we should be careful with it.  
+```{r}
+## Remove the unwanted variables WITH CAUTION  
+data_0<- data_0[-c(1, 9, 12, 13, 15, 16, 18, 26, 27, 31, 32, 33, 35, 36, 39, 40)]
+```
+
+
+## Exploratory Data Analysis   
+
+### Cross Country Comparison
+```{r}
+summary(data_0$Country)
+```
+\qquad We can see that in 28,347 charging stations, 23,504 are in the United States and only 4,843 are in Canada. This can be due to several reasons. First reason could be that Tesla, one of the largest electric vehicle manufacturer is an American coporation. The second reason might be that electric vehicles tend to perform better in lower latitude area because cold weather might lower the performance of the battery.  
+
+
+### Inside U.S.  
+
+#### By States  
+
+```{r}
+## Select for US first 
+data_us<- data_0 %>% filter(Country=="US")
+data_us$State<- as.factor(data_us$State)
+## Get an overview with numbers 
+summary(data_us$State)
+barplot(table(data_us$State), main="Charging stations in U.S.", xlab="States")
+```
+\qquad As we could see that inside U.S., California has the most charging stations. This might be due to the weather and the location of headquarter of Tesla, or it might be due to the large size of California.    
+
+#### By Cities  
+
+```{r}
+## Check for the cities with the most charging stations  
+summary(data_us$City)[1:10]
+```
+\qquad As we can see, 10 cities in the U.S. with the most charging stations are listed above. Four our of ten, which are Los Angeles, San Diego, San Francisco and Irvine, are located in California. This would meet up with my notion above.    
+
+#### By ZIP Codes(Counties)  
+
+```{r}
+## Check for the counties with the most charging stations  
+summary(data_us$ZIP)[1:10]
+```
+\qquad Furthermore, let's check on the ZIP code in U.S. The 10 areas/counties with the most charging stations are Orange County/92618(Irvine, California), San Mateo County/94025(Menlo Park, California), San Diego/92101(California), King County/98004(Bellevue, Washington), Santa Clara County/95054(California), Sacramento/95814(California), San Luis Obispo County/93446(Paso Robles, California), Denver/80202(Colorado), Fremont/94538(California), Baltimore/21201(Maryland).  
+\qquad We can clearly see that, with more detailed locations, 7 out of ten zip code areas with the most charging stations are in California.  
+
+#### By Network  
+
+```{r}
+## Get an overview with the variables first  
+summary(data_0$EV.Network) 
+
+ggplot(data_0) + 
+  geom_bar(aes(x = EV.Network), size = 1, fill="blue") + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+\qquad Most of the electric charging stations belong to some network(franchise). ChargePoint Network is the largest network among those. There are also 5,872 charging stations that are Non-Networked. This might be the result of misrecording or some small independent charging stations.   
+
+#### By Ownerships  
+
+```{r}
+## Get an overview with the variable first  
+summary(data_0$Owner.Type.Code)
+
+ggplot(data_0) + 
+  geom_bar(aes(x = Owner.Type.Code), size = 1, fill="red") + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+\qquad From the variable explanation website, we can acquire the information that variable "Owner.Type.Code" represents the owner's identity of the infrastructure. The one without a header is the variable that was not mentioned from the dataset. Among the explanations, there was not such thing as corporation owned charging station, which might actually be the largest owner of the charging stations nationwide. Besides that, as the second largest category, private owner charging station(P) is all over the country. This might be private commercial charging stations or the owner of electric vehicles.   
+
+
+## Mapping  
+
+### Zoom down to California  
+```{r}
+## Construct the map for California  
+data_ca<- data_us %>% filter(State=="CA")
+map_ca<- get_map("California", zoom=6)
+
+ggmap(map_ca) + 
+  geom_point(data=data_ca, aes(x =Longitude, y=Latitude, color="red"), size=0.3) + 
+  labs(title="Charging Stations in California")
+```
+\qquad From the map, we get a even clearer view on how the electric vehicle charging stations distributed in California. They have two heavy centers at South(Los Angeles and San Diego) and North(San Francisco). And there are more charging stations when it gets closer to the coastal area.   
+
+
+### U.S. East Coast  
+```{r}
+## Construct the map for East Coast  
+data_east<- data_us %>% filter(Longitude> -85)
+map_east<- get_map("New York", zoom= 5)
+
+ggmap(map_east) + 
+  geom_point(data=data_east, aes(x =Longitude, y=Latitude, color="red"), size=0.3) + 
+  labs(title="Charging Stations in East Coast")
+```
+\qquad From this map we can see that electric vehicle charging stations on the east coast(east of 85 west longitude in U.S.) are actually more than the number of charging stations in California. However, none of those eastern states has charging station as half of the number in California. From my point of view, this is the result of the sizes of the states. States on the east coast are generally smaller than California. On the other hand, we can see that the charging stations on the east coast are distributed more average along the coastal area. Still, the stations get denser when it gets closer to the coast.  
+
+
+### Canada Charging Stations  
+
+```{r}
+## Construct the map for Canada  
+data_cn<- data_0 %>% filter(Country=="CA")
+map_cn<- get_map("Canada", zoom=3)
+
+ggmap(map_cn) + 
+  geom_point(data=data_cn, aes(x =Longitude, y=Latitude, color="red"), size=0.3) + 
+  labs(title="Charging Stations in Canada")
+```
+\qquad It was not hard to find that the electric vehicle charging stations in Canada also have two centers on East and West coasts respectively. And the stations in Canada are more densed when it gets closer to the U.S. border.   
+
+
+### Network of a Charging Station
+```{r}
+## After understanding the variable, we could map it out  
+map_network<- get_map("America", zoom=4)
+
+ggmap(map_network) + 
+  geom_point(data=data_0, aes(x =Longitude, y=Latitude, color=EV.Network), size=0.3) + 
+  labs(title="Charging Stations by Network")
+```
+\qquad From the map we can see that Non-Networked charging stations are more likely to be distributed in the east coast area than the west coast.  
+
+
+### Charging Stations by Owners
+```{r}
+## Map out for ownership as well  
+map_owner<- get_map("America", zoom=4)
+ggmap(map_owner) + 
+  geom_point(data=data_0, aes(x =Longitude, y=Latitude, color=Owner.Type.Code), size=0.3) + 
+  labs(title="Charging Stations by Owner")
+```
+\qquad In this map, most of the owner-unrecorded charging stations are densed in coastal areas and big cities. On the other hand, the rest of the charging stations, which are more likely to be owned by the government would sit in the areas between the commercial charging stations.    
+
+## Summary  
+
+### Implication  
+\qquad This project mainly discussed the distribution of the electric vehicle charging stations' locations and its relationship with other intuitive aspects. We have a clear view that the charging stations are more likely to be distributed closer to the coastal area. Different kinds of charging stations in terms of ownership or network have different patterns of distributions. The reason could be due to economics, road conditions and local sales of electric vehicles. However, there is no proof in the dataset, so we cannot make such conclusion by now.  
+
+### Limitation  
+\qquad The dataset was extracted from the government fuel energy website, which would be accurate but might lack some insightful or interesting variables. The prices of charging stations could be an important subject to study but the dataset only contains "Free", "Pay to Park" and etc. If we could have specific pricing information on charging stations, then it would make this study more practical.  
+
+### Future Direction 
+\qquad It will be more practical to relate the locations of charging stations to many different kinds of outside resources. If I decided a topic(sales of electric vehicles, road coditions), I would search for outside resources and highly relate them to the dataframe we have right now.  
+
+
+
+## Reference  
+[1]Data source: 
+https://afdc.energy.gov/fuels/electricity_locations.html#/find/nearest?fuel=ELEC.    
+[2]Variable Explanation: 
+https://developer.nrel.gov/docs/transportation/alt-fuel-stations-v1/all/.    
+
+
+
+
+
