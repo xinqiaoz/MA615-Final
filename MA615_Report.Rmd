@@ -198,13 +198,24 @@ ggmap(map_owner) +
 \qquad It will be more practical to relate the locations of charging stations to many different kinds of outside resources. If I decided a topic(sales of electric vehicles, road coditions), I would search for outside resources and highly relate them to the dataframe we have right now.  
 
 
+## Appendix   
+
+This is the data I intended to add into the study. This website(referred at last) provides numeric values of ranges of different models of electric vehicles. I feel like it would be interesting to add it into the study. However, I did not find a good place to fit in this idea.   
+On the other hand, they do not provide any csv download portal or url to extract. Thus I manually picked ten popular models just for fun.  
+```{r}
+model<- c("Tesla CyberTruck Tri Motor", "Tesla Model S Long Range", "Tesla Model S Performance", "Tesla Model X Long Range", "Jaguar I-Pace", "Porsche Taycan 4S", "Audi e-tron Sportback 50 quattro", "Honda e", "Mercedes EQA", "BMW iX3")
+range<- c(750, 525, 510, 460, 370, 355, 290, 200, 350, 350)
+EV<- data.frame(Model=model, Range=range)
+```
+
 
 ## Reference  
 [1]Data source: 
 https://afdc.energy.gov/fuels/electricity_locations.html#/find/nearest?fuel=ELEC.    
 [2]Variable Explanation: 
 https://developer.nrel.gov/docs/transportation/alt-fuel-stations-v1/all/.    
-
+[3]EV Range data: 
+https://ev-database.org/cheatsheet/range-electric-car. 
 
 
 
