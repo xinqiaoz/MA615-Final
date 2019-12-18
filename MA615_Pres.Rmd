@@ -1,13 +1,12 @@
 ---
-title: "Charging Station"
+title: "Electric Vehicle Charging Stations in North America"
 author: "Xinqiao Zhang"
 date: "12/13/2019"
 output: ioslides_presentation
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, fig.show = TRUE,  out.width="0.9\\linewidth",dev="pdf",fig.align  = 'center')
-devtools::install_github("lchiffon/wordcloud2")
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE,  out.width="65%", fig.align  = 'center')
 pacman::p_load(
   "tidyverse",
   "kableExtra",
@@ -18,7 +17,7 @@ pacman::p_load(
   "ggmap", 
   "RColorBrewer", 
   "knitr", 
-  "wordcloud2"
+  "wordcloud"
 )
 ```
 
@@ -81,9 +80,14 @@ data_us<- data_0 %>% filter(Country=="US")
 data_us$State<- as.factor(data_us$State)
 ## Get an overview with numbers 
 summary(data_us$State)
+```
+
+---
+
+```{r, fig.width=7, fig.height=3}
 barplot(table(data_us$State), main="Charging stations in U.S.", xlab="States")
 ```
----
+
 \qquad As we could see that inside U.S., California has the most charging stations. This might be due to the weather and the location of headquarter of Tesla, or it might be due to the large size of California.    
 
 ---
@@ -135,6 +139,8 @@ ggplot(data_0) +
   geom_bar(aes(x = Owner.Type.Code), size = 1, fill="red") + 
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
+---
+
 \qquad From the variable explanation website, we can acquire the information that variable "Owner.Type.Code" represents the owner's identity of the infrastructure. The one without a header is the variable that was not mentioned from the dataset. Among the explanations, there was not such thing as corporation owned charging station, which might actually be the largest owner of the charging stations nationwide. Besides that, as the second largest category, private owner charging station(P) is all over the country. This might be private commercial charging stations or the owner of electric vehicles.   
 
 
@@ -164,6 +170,9 @@ ggmap(map_east) +
   geom_point(data=data_east, aes(x =Longitude, y=Latitude, color="red"), size=0.3) + 
   labs(title="Charging Stations in East Coast")
 ```
+
+---
+
 \qquad From this map we can see that electric vehicle charging stations on the east coast(east of 85 west longitude in U.S.) are actually more than the number of charging stations in California. However, none of those eastern states has charging station as half of the number in California. From my point of view, this is the result of the sizes of the states. States on the east coast are generally smaller than California. On the other hand, we can see that the charging stations on the east coast are distributed more average along the coastal area. Still, the stations get denser when it gets closer to the coast.  
 
 ---
